@@ -63,10 +63,10 @@ h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(2rem,5
 <body>
 
 <div id="landing">
-  <h1>foto test</h1>
-  <p class="sub">guarda foto</p>
+  <h1>Foto</h1>
+  <p class="sub">guarda foto troia n1</p>
   <div class="input-wrap">
-    <input type="text" id="folder-input" placeholder="incolla qui link cartella foto…" onkeydown="if(event.key==='Enter')loadFolder()"/>
+    <input type="text" id="folder-input" placeholder="incolla link qua…" onkeydown="if(event.key==='Enter')loadFolder()"/>
     <button onclick="loadFolder()">Open</button>
   </div>
   <p class="hint">Condividi la cartella - seleziona a "tutti quelli con il link" - copia il link qua</p>
@@ -74,11 +74,12 @@ h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(2rem,5
 
 <div id="gallery-view">
   <div id="topbar">
-    <span class="logo">gio</span>
+    <span class="logo">aprigrande</span>
     <span id="album-breadcrumb"></span>
     <button id="slideshow-btn" style="display:none" onclick="toggleSlideshow()">Slideshow</button>
     <button id="back-btn" style="display:none" onclick="goBack()">← Albums</button>
-    <button id="change-btn" onclick="changeFolder()">Indietro</button>
+    <button id="change-btn" onclick="changeFolder()">indietro</button>
+    <a id="drive-btn" href="#" target="_blank" rel="noopener" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#555;cursor:pointer;background:none;border:0.5px solid #2a2a2a;padding:6px 14px;text-decoration:none;transition:color 0.2s,border-color 0.2s" onmouseover="this.style.color='#e8e2d9';this.style.borderColor='#555'" onmouseout="this.style.color='#555';this.style.borderColor='#2a2a2a'">Apri in Drive ↗</a>
   </div>
   <div id="content">
     <div id="status" class="status-msg" style="display:none"></div>
@@ -121,6 +122,7 @@ async function loadFolder() {
   rootFolderId = id;
   document.getElementById('landing').style.display = 'none';
   document.getElementById('gallery-view').style.display = 'flex';
+  document.getElementById('drive-btn').href = `https://drive.google.com/drive/folders/${id}`;
   await loadAlbumsOrPhotos(id);
 }
 
@@ -209,6 +211,7 @@ function loadAlbumCoverFromPhotos(imgs, card) {
 }
 
 async function openAlbum(folderId, name) {
+  document.getElementById('drive-btn').href = `https://drive.google.com/drive/folders/${folderId}`;
   setStatus('Loading…');
   document.getElementById('albums-grid').style.display = 'none';
   document.getElementById('photos-grid').style.display = 'none';
@@ -267,6 +270,7 @@ function goBack() {
   document.getElementById('slideshow-btn').style.display = 'none';
   document.getElementById('album-breadcrumb').textContent = '';
   document.getElementById('photos-grid').style.display = 'none';
+  document.getElementById('drive-btn').href = `https://drive.google.com/drive/folders/${rootFolderId}`;
   loadAlbumsOrPhotos(rootFolderId);
 }
 
