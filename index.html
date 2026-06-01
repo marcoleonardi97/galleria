@@ -431,23 +431,23 @@ h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(2rem,5
 <body>
 
 <div id="landing">
-  <h1>Galleria</h1>
-  <p class="sub">Personal photo archive</p>
+  <h1>Foto</h1>
+  <p class="sub">guarda altre foto troia n1</p>
   <div class="input-wrap">
     <input type="text" id="folder-input" placeholder="Paste your Google Drive folder link…" onkeydown="if(event.key==='Enter')loadFolder()"/>
     <button onclick="loadFolder()">Open</button>
   </div>
-  <p class="hint">Your link stays in your browser — nothing is stored or shared</p>
+  <p class="hint">Condividi la cartella - seleziona a "tutti quelli con il link" - copia il link qua</p>
 </div>
 
 <div id="gallery-view">
   <div id="topbar">
-    <span class="logo">Galleria</span>
+    <span class="logo">publicRelations</span>
     <span id="album-breadcrumb"></span>
     <button id="slideshow-btn" style="display:none" onclick="toggleSlideshow()">Slideshow</button>
     <button id="back-btn" style="display:none" onclick="goBack()">← Albums</button>
-    <button id="change-btn" onclick="changeFolder()">Change folder</button>
-    <a id="drive-btn" href="#" target="_blank" rel="noopener" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#555;cursor:pointer;background:none;border:0.5px solid #2a2a2a;padding:6px 14px;text-decoration:none;transition:color 0.2s,border-color 0.2s" onmouseover="this.style.color='#e8e2d9';this.style.borderColor='#555'" onmouseout="this.style.color='#555';this.style.borderColor='#2a2a2a'">Open in Drive ↗</a>
+    <button id="change-btn" onclick="changeFolder()">Indietro</button>
+    <a id="drive-btn" href="#" target="_blank" rel="noopener" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#555;cursor:pointer;background:none;border:0.5px solid #2a2a2a;padding:6px 14px;text-decoration:none;transition:color 0.2s,border-color 0.2s" onmouseover="this.style.color='#e8e2d9';this.style.borderColor='#555'" onmouseout="this.style.color='#555';this.style.borderColor='#2a2a2a'">Apri in Drive ↗</a>
   </div>
   <div id="content">
     <div id="status" class="status-msg" style="display:none"></div>
