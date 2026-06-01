@@ -96,6 +96,7 @@ h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(2rem,5
     <button onclick="lbNav(-1)">← Prev</button>
     <span id="lb-counter"></span>
     <button onclick="lbNav(1)">Next →</button>
+    <button id="lb-share" onclick="sharePhoto()">Condividi</button>
   </div>
 </div>
 
@@ -135,13 +136,21 @@ window.addEventListener('DOMContentLoaded', () => {
 async function driveList(folderId, mimeType) {
   let q = `'${folderId}' in parents and trashed=false`;
   if (mimeType) q += ` and mimeType='${mimeType}'`;
-  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&pageSize=500&orderBy=name&key=${API_KEY}`;
-  const r = await fetch(url);
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}));
-    throw new Error((err.error && err.error.message) || ('HTTP ' + r.status));
-  }
-  return (await r.json()).files || [];
+  let files = [];
+  let pageToken = '';
+  do {
+    let url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=nextPageToken,files(id,name,mimeType)&pageSize=1000&orderBy=name&key=${API_KEY}`;
+    if (pageToken) url += `&pageToken=${pageToken}`;
+    const r = await fetch(url);
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error((err.error && err.error.message) || ('HTTP ' + r.status));
+    }
+    const data = await r.json();
+    files = files.concat(data.files || []);
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+  return files;
 }
 
 function imgUrl(fileId, size) {
@@ -237,7 +246,7 @@ function renderPhotos(photos, albumName) {
   currentPhotos = photos;
   if (albumName) {
     document.getElementById('back-btn').style.display = 'block';
-    document.getElementById('album-breadcrumb').textContent = albumName;
+    document.getElementById('album-breadcrumb').textContent = albumName + (photos.length ? ` · ${photos.length} photo${photos.length !== 1 ? 's' : ''}` : '');
   }
   document.getElementById('slideshow-btn').style.display = photos.length > 0 ? 'block' : 'none';
   document.getElementById('albums-grid').style.display = 'none';
@@ -299,372 +308,22 @@ function lbNav(dir) {
   renderLbPhoto();
 }
 
-function closeLightbox() {
-  document.getElementById('lightbox').classList.remove('active');
-  document.body.style.overflow = '';
-  stopSlideshow();
-}
-
-function toggleSlideshow() {
-  isSlideshow ? stopSlideshow() : startSlideshow();
-}
-
-function startSlideshow() {
-  isSlideshow = true;
-  openLightbox(lbIndex < currentPhotos.length ? lbIndex : 0);
-  document.getElementById('slideshow-btn').classList.add('playing');
-  document.getElementById('slideshow-btn').textContent = 'Stop';
-  slideshowTimer = setInterval(() => lbNav(1), 4000);
-}
-
-function stopSlideshow() {
-  isSlideshow = false;
-  clearInterval(slideshowTimer);
-  document.getElementById('slideshow-btn').classList.remove('playing');
-  document.getElementById('slideshow-btn').textContent = 'Slideshow';
-}
-
-function setStatus(msg) {
-  const s = document.getElementById('status');
-  s.className = 'status-msg';
-  s.textContent = msg;
-  s.style.display = msg ? 'block' : 'none';
-}
-
-function showError(msg) {
-  const s = document.getElementById('status');
-  s.className = 'status-msg error-msg';
-  s.textContent = msg;
-  s.style.display = 'block';
-}
-
-document.addEventListener('keydown', e => {
-  const lb = document.getElementById('lightbox');
-  if (!lb.classList.contains('active')) return;
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') lbNav(1);
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') lbNav(-1);
-  if (e.key === 'Escape') closeLightbox();
-});
-
-// Swipe gestures for mobile
-let touchStartX = 0;
-let touchStartY = 0;
-const lb = document.getElementById('lightbox');
-lb.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
-lb.addEventListener('touchend', e => {
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  if (Math.abs(dx) < 30 && Math.abs(dy) < 30) return; // tap, ignore
-  if (Math.abs(dx) > Math.abs(dy)) {
-    dx < 0 ? lbNav(1) : lbNav(-1); // swipe left = next, right = prev
-  } else if (dy > 60) {
-    closeLightbox(); // swipe down = close
-  }
-}, { passive: true });
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Galleria</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#0c0c0c;color:#e8e2d9;font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh}
-
-#landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;text-align:center}
-h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(2rem,5vw,3.5rem);letter-spacing:0.15em;color:#e8e2d9;margin-bottom:0.5rem}
-.sub{font-size:13px;letter-spacing:0.2em;color:#555;text-transform:uppercase;margin-bottom:3rem}
-
-.input-wrap{display:flex;width:100%;max-width:580px;border:0.5px solid #2e2e2e;background:#111}
-.input-wrap input{flex:1;background:transparent;border:none;padding:15px 18px;color:#e8e2d9;font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
-.input-wrap input::placeholder{color:#3a3a3a}
-.input-wrap button{background:#e8e2d9;color:#0c0c0c;border:none;padding:15px 28px;font-family:'DM Sans',sans-serif;font-size:13px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer}
-.input-wrap button:hover{background:#fff}
-.hint{font-size:11px;color:#333;margin-top:1rem;letter-spacing:0.08em}
-
-#gallery-view{display:none;flex-direction:column;min-height:100vh}
-#topbar{display:flex;align-items:center;gap:1rem;padding:1.1rem 2rem;border-bottom:0.5px solid #181818;position:sticky;top:0;background:#0c0c0c;z-index:10}
-#topbar .logo{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:1.25rem;letter-spacing:0.15em;margin-right:auto}
-#back-btn,#slideshow-btn{font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#555;cursor:pointer;background:none;border:0.5px solid #2a2a2a;padding:6px 14px;transition:color 0.2s,border-color 0.2s}
-#back-btn:hover,#slideshow-btn:hover{color:#e8e2d9;border-color:#555}
-#slideshow-btn.playing{color:#e8e2d9;border-color:#555}
-#album-breadcrumb{font-size:12px;color:#444;letter-spacing:0.1em}
-
-#content{padding:1px;flex:1}
-
-#albums-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1px;background:#181818}
-.album-card{background:#0c0c0c;cursor:pointer;aspect-ratio:1;position:relative;overflow:hidden;display:flex;align-items:flex-end}
-.album-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.55;transition:opacity 0.4s,transform 0.5s}
-.album-card:hover img{opacity:0.8;transform:scale(1.05)}
-.cover-placeholder{position:absolute;inset:0;background:#111;display:flex;align-items:center;justify-content:center;font-size:48px;color:#1e1e1e}
-.album-info{position:relative;z-index:1;padding:1.25rem;width:100%;background:linear-gradient(transparent,rgba(0,0,0,0.9))}
-.album-name{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:1.15rem;letter-spacing:0.05em}
-.album-count{font-size:11px;color:#666;letter-spacing:0.1em;margin-top:3px;text-transform:uppercase}
-
-#photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:#181818}
-.photo-thumb{aspect-ratio:1;overflow:hidden;cursor:pointer;background:#111}
-.photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;opacity:0.8;transition:opacity 0.3s,transform 0.4s}
-.photo-thumb:hover img{opacity:1;transform:scale(1.06)}
-
-#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:100;flex-direction:column;align-items:center;justify-content:center}
-#lightbox.active{display:flex}
-#lb-img{max-width:92vw;max-height:82vh;object-fit:contain}
-#lb-caption{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:0.9rem;color:#444;margin-top:0.75rem;letter-spacing:0.05em;height:1.2em}
-#lb-controls{display:flex;align-items:center;gap:1.5rem;margin-top:1.25rem}
-#lb-controls button{background:none;border:0.5px solid #2a2a2a;color:#666;padding:8px 20px;cursor:pointer;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;transition:color 0.2s,border-color 0.2s}
-#lb-controls button:hover{border-color:#666;color:#e8e2d9}
-#lb-counter{font-size:11px;color:#444;letter-spacing:0.12em;min-width:64px;text-align:center}
-#lb-close{position:fixed;top:1.5rem;right:1.75rem;background:none;border:none;color:#444;font-size:1.4rem;cursor:pointer;line-height:1;transition:color 0.2s}
-#lb-close:hover{color:#e8e2d9}
-
-.status-msg{text-align:center;padding:5rem 2rem;color:#333;font-size:13px;letter-spacing:0.15em;text-transform:uppercase}
-.error-msg{color:#6b3030 !important}
-</style>
-</head>
-<body>
-
-<div id="landing">
-  <h1>Foto</h1>
-  <p class="sub">guarda altre foto troia n1</p>
-  <div class="input-wrap">
-    <input type="text" id="folder-input" placeholder="Paste your Google Drive folder link…" onkeydown="if(event.key==='Enter')loadFolder()"/>
-    <button onclick="loadFolder()">Open</button>
-  </div>
-  <p class="hint">Condividi la cartella - seleziona a "tutti quelli con il link" - copia il link qua</p>
-</div>
-
-<div id="gallery-view">
-  <div id="topbar">
-    <span class="logo">publicRelations</span>
-    <span id="album-breadcrumb"></span>
-    <button id="slideshow-btn" style="display:none" onclick="toggleSlideshow()">Slideshow</button>
-    <button id="back-btn" style="display:none" onclick="goBack()">← Albums</button>
-    <button id="change-btn" onclick="changeFolder()">Indietro</button>
-    <a id="drive-btn" href="#" target="_blank" rel="noopener" style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:#555;cursor:pointer;background:none;border:0.5px solid #2a2a2a;padding:6px 14px;text-decoration:none;transition:color 0.2s,border-color 0.2s" onmouseover="this.style.color='#e8e2d9';this.style.borderColor='#555'" onmouseout="this.style.color='#555';this.style.borderColor='#2a2a2a'">Apri in Drive ↗</a>
-  </div>
-  <div id="content">
-    <div id="status" class="status-msg" style="display:none"></div>
-    <div id="albums-grid" style="display:none"></div>
-    <div id="photos-grid" style="display:none"></div>
-  </div>
-</div>
-
-<div id="lightbox">
-  <button id="lb-close" onclick="closeLightbox()">✕</button>
-  <img id="lb-img" src="" alt=""/>
-  <p id="lb-caption"></p>
-  <div id="lb-controls">
-    <button onclick="lbNav(-1)">← Prev</button>
-    <span id="lb-counter"></span>
-    <button onclick="lbNav(1)">Next →</button>
-  </div>
-</div>
-
-<script>
-const API_KEY = 'AIzaSyCYP1u6CH2jcOQkX8auB975CTgOvWZJqdI';
-let rootFolderId = null;
-let currentPhotos = [];
-let lbIndex = 0;
-let slideshowTimer = null;
-let isSlideshow = false;
-
-function extractFolderId(url) {
-  const m = url.match(/folders\/([a-zA-Z0-9_-]+)/);
-  if (m) return m[1];
-  const m2 = url.match(/[-\w]{25,}/);
-  return m2 ? m2[0] : null;
-}
-
-async function loadFolder() {
-  const val = document.getElementById('folder-input').value.trim();
-  if (!val) return;
-  const id = extractFolderId(val);
-  if (!id) { showError('Could not read folder ID. Paste the full Google Drive folder URL.'); return; }
-  rootFolderId = id;
-  localStorage.setItem('galleria_last_folder', val);
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('gallery-view').style.display = 'flex';
-  document.getElementById('drive-btn').href = `https://drive.google.com/drive/folders/${id}`;
-  await loadAlbumsOrPhotos(id);
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  const last = localStorage.getItem('galleria_last_folder');
-  if (last) document.getElementById('folder-input').value = last;
-});
-
-async function driveList(folderId, mimeType) {
-  let q = `'${folderId}' in parents and trashed=false`;
-  if (mimeType) q += ` and mimeType='${mimeType}'`;
-  const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType)&pageSize=500&orderBy=name&key=${API_KEY}`;
-  const r = await fetch(url);
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({}));
-    throw new Error((err.error && err.error.message) || ('HTTP ' + r.status));
-  }
-  return (await r.json()).files || [];
-}
-
-function imgUrl(fileId, size) {
-  return `https://lh3.googleusercontent.com/d/${fileId}=s${size}`;
-}
-
-async function loadAlbumsOrPhotos(folderId) {
-  setStatus('Loading…');
-  try {
-    const [folders, allFiles] = await Promise.all([
-      driveList(folderId, 'application/vnd.google-apps.folder'),
-      driveList(folderId)
-    ]);
-    const photos = allFiles.filter(f => f.mimeType.startsWith('image/'));
-    if (folders.length > 0) {
-      renderAlbums(folders, photos);
-    } else {
-      renderPhotos(photos, '');
-    }
-  } catch(e) {
-    showError('Could not load folder. Make sure it is set to "Anyone with the link can view".\n\nError: ' + e.message);
-  }
-}
-
-function renderAlbums(folders, rootPhotos) {
-  setStatus('');
-  document.getElementById('back-btn').style.display = 'none';
-  document.getElementById('slideshow-btn').style.display = 'none';
-  document.getElementById('album-breadcrumb').textContent = '';
-  document.getElementById('photos-grid').style.display = 'none';
-  const grid = document.getElementById('albums-grid');
-  grid.style.display = 'grid';
-  grid.innerHTML = '';
-
-  folders.forEach(f => {
-    const card = document.createElement('div');
-    card.className = 'album-card';
-    card.innerHTML = `<div class="cover-placeholder">◻</div><div class="album-info"><div class="album-name">${f.name}</div><div class="album-count">Loading…</div></div>`;
-    card.onclick = () => openAlbum(f.id, f.name);
-    grid.appendChild(card);
-    loadAlbumCover(f.id, card);
-  });
-
-  if (rootPhotos.length > 0) {
-    const card = document.createElement('div');
-    card.className = 'album-card';
-    card.innerHTML = `<div class="cover-placeholder">◻</div><div class="album-info"><div class="album-name">Unsorted</div><div class="album-count">${rootPhotos.length} photo${rootPhotos.length !== 1 ? 's' : ''}</div></div>`;
-    card.onclick = () => renderPhotos(rootPhotos, 'Unsorted');
-    grid.appendChild(card);
-    loadAlbumCoverFromPhotos(rootPhotos, card);
-  }
-}
-
-async function loadAlbumCover(folderId, card) {
-  try {
-    const files = await driveList(folderId);
-    const imgs = files.filter(f => f.mimeType.startsWith('image/'));
-    const countEl = card.querySelector('.album-count');
-    if (countEl) countEl.textContent = imgs.length + ' photo' + (imgs.length !== 1 ? 's' : '');
-    if (imgs.length > 0) {
-      loadAlbumCoverFromPhotos(imgs, card);
-    }
-  } catch(e) {}
-}
-
-function loadAlbumCoverFromPhotos(imgs, card) {
-  if (!imgs.length) return;
-  const img = document.createElement('img');
-  img.alt = '';
-  img.onload = () => { card.querySelector('.cover-placeholder') && card.querySelector('.cover-placeholder').remove(); };
-  img.src = imgUrl(imgs[0].id, 600);
-  card.insertBefore(img, card.firstChild);
-}
-
-async function openAlbum(folderId, name) {
-  document.getElementById('drive-btn').href = `https://drive.google.com/drive/folders/${folderId}`;
-  setStatus('Loading…');
-  document.getElementById('albums-grid').style.display = 'none';
-  document.getElementById('photos-grid').style.display = 'none';
-  document.getElementById('back-btn').style.display = 'block';
-  document.getElementById('album-breadcrumb').textContent = name;
-  try {
-    const files = await driveList(folderId);
-    const photos = files.filter(f => f.mimeType.startsWith('image/'));
-    renderPhotos(photos, name);
-  } catch(e) {
-    showError('Could not load album: ' + e.message);
-  }
-}
-
-function renderPhotos(photos, albumName) {
-  setStatus('');
-  currentPhotos = photos;
-  if (albumName) {
-    document.getElementById('back-btn').style.display = 'block';
-    document.getElementById('album-breadcrumb').textContent = albumName;
-  }
-  document.getElementById('slideshow-btn').style.display = photos.length > 0 ? 'block' : 'none';
-  document.getElementById('albums-grid').style.display = 'none';
-  const grid = document.getElementById('photos-grid');
-  grid.style.display = 'grid';
-  grid.innerHTML = '';
-  if (photos.length === 0) {
-    grid.style.display = 'none';
-    setStatus('No photos found in this folder.');
-    return;
-  }
-  photos.forEach((p, i) => {
-    const div = document.createElement('div');
-    div.className = 'photo-thumb';
-    const img = document.createElement('img');
-    img.src = imgUrl(p.id, 400);
-    img.alt = p.name;
-    img.loading = 'lazy';
-    div.appendChild(img);
-    div.onclick = () => openLightbox(i);
-    grid.appendChild(div);
-  });
-}
-
-function changeFolder() {
-  stopSlideshow();
-  document.getElementById('gallery-view').style.display = 'none';
-  document.getElementById('landing').style.display = 'flex';
-  document.getElementById('folder-input').value = '';
-  document.getElementById('folder-input').focus();
-}
-
-function goBack() {
-  stopSlideshow();
-  document.getElementById('back-btn').style.display = 'none';
-  document.getElementById('slideshow-btn').style.display = 'none';
-  document.getElementById('album-breadcrumb').textContent = '';
-  document.getElementById('photos-grid').style.display = 'none';
-  document.getElementById('drive-btn').href = `https://drive.google.com/drive/folders/${rootFolderId}`;
-  loadAlbumsOrPhotos(rootFolderId);
-}
-
-function openLightbox(i) {
-  lbIndex = i;
-  renderLbPhoto();
-  document.getElementById('lightbox').classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function renderLbPhoto() {
+async function sharePhoto() {
   const p = currentPhotos[lbIndex];
-  document.getElementById('lb-img').src = imgUrl(p.id, 1920);
-  document.getElementById('lb-caption').textContent = p.name.replace(/\.[^.]+$/, '');
-  document.getElementById('lb-counter').textContent = (lbIndex + 1) + ' / ' + currentPhotos.length;
-}
-
-function lbNav(dir) {
-  lbIndex = (lbIndex + dir + currentPhotos.length) % currentPhotos.length;
-  renderLbPhoto();
+  const link = `https://drive.google.com/file/d/${p.id}/view`;
+  const btn = document.getElementById('lb-share');
+  if (navigator.share) {
+    try { await navigator.share({ title: p.name, url: link }); } catch(e) {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(link);
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    } catch(e) {
+      prompt('Copy this link:', link);
+    }
+  }
 }
 
 function closeLightbox() {
