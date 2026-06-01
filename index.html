@@ -63,22 +63,22 @@ h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:clamp(2rem,5
 <body>
 
 <div id="landing">
-  <h1>Galleria</h1>
-  <p class="sub">Personal photo archive</p>
+  <h1>foto test</h1>
+  <p class="sub">guarda foto</p>
   <div class="input-wrap">
     <input type="text" id="folder-input" placeholder="Paste your Google Drive folder link…" onkeydown="if(event.key==='Enter')loadFolder()"/>
     <button onclick="loadFolder()">Open</button>
   </div>
-  <p class="hint">Your link stays in your browser — nothing is stored or shared</p>
+  <p class="hint">Condividi la cartella - seleziona a "tutti quelli con il link" - copia il link qua</p>
 </div>
 
 <div id="gallery-view">
   <div id="topbar">
-    <span class="logo">Galleria</span>
+    <span class="logo">gio</span>
     <span id="album-breadcrumb"></span>
     <button id="slideshow-btn" style="display:none" onclick="toggleSlideshow()">Slideshow</button>
     <button id="back-btn" style="display:none" onclick="goBack()">← Albums</button>
-    <button id="change-btn" onclick="changeFolder()">Change folder</button>
+    <button id="change-btn" onclick="changeFolder()">Indietro</button>
   </div>
   <div id="content">
     <div id="status" class="status-msg" style="display:none"></div>
